@@ -36,7 +36,7 @@ func NewGitHubProvider(p *ProviderData) *GitHubProvider {
 		p.ValidateURL = &url.URL{
 			Scheme: "https",
 			Host:   "api.github.com",
-			Path:   "/user/emails",
+			Path:   "/user",
 		}
 	}
 	if p.Scope == "" {
@@ -166,10 +166,9 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 
 func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 
-	var emails []struct {
-		Email   string `json:"email"`
-		Primary bool   `json:"primary"`
-	}
+  var user struct {
+    Login string `json:"login"`
+  }
 
 	// if we require an Org or Team, check that first
 	if p.Org != "" {
@@ -204,15 +203,11 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("got %d from %q %s", resp.StatusCode, endpoint, body)
 	}
 
-	if err := json.Unmarshal(body, &emails); err != nil {
+	if err := json.Unmarshal(body, &user); err != nil {
 		return "", fmt.Errorf("%s unmarshaling %s", err, body)
 	}
 
-	for _, email := range emails {
-		if email.Primary {
-			return email.Email, nil
-		}
-	}
+  return user.Login, nil
 
 	return "", nil
 }
